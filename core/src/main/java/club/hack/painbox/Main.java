@@ -104,7 +104,7 @@ public class Main implements ApplicationListener {
     @Override
     public void create() {
         // Initialize Textures, Sprites, Sounds, etc.
-        backgroundTexture = new Texture("background.png");
+        backgroundTexture = new Texture("Background.png");
         playerAnimation = new Animation(new Texture[]{new Texture("Player-1.png"), new Texture("Player-2.png")}, 0.2f);
         eyeAnimation = new Animation(new Texture[]{new Texture("Eye-1.png"), new Texture("Eye-2.png"), new Texture("Eye-3.png"), new Texture("Eye-4.png"), new Texture("Eye-4.png"), new Texture("Eye-5.png")}, 0.2f, "once");
         enemyTexture = new Texture("Enemy.png");
