@@ -4,7 +4,7 @@ A [libGDX](https://libgdx.com/) based game created in 24 hours for [Hack Club Co
 
 # Running the game
 
-Download the latest release from the Releases tab. **Execute the JAR by typing java -jar \<jar path>**
+Download the latest release from the Releases tab. **Execute the JAR by typing java -jar \<jar path>**. Double clicking/menu opening the JAR most likely won't work, despite it being a GUI application.
 
 # Objective
 
