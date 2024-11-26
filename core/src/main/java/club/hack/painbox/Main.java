@@ -2,6 +2,7 @@ package club.hack.painbox;
 
 import club.hack.painbox.util.Animation;
 import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import club.hack.painbox.data.BulletData;
 import club.hack.painbox.data.EnemyData;
@@ -29,6 +30,7 @@ public class Main implements ApplicationListener {
     Texture filledTexture;
     Animation playerAnimation;
     Animation eyeAnimation;
+    Texture playerTexture;
     Texture enemyTexture;
     Texture bulletTexture;
     Texture heartTexture;
@@ -106,12 +108,14 @@ public class Main implements ApplicationListener {
         // Initialize Textures, Sprites, Sounds, etc.
         backgroundTexture = new Texture("Background.png");
         playerAnimation = new Animation(new Texture[]{new Texture("Player-1.png"), new Texture("Player-2.png")}, 0.2f);
+        playerTexture = new Texture("Player.png");
         eyeAnimation = new Animation(new Texture[]{new Texture("Eye-1.png"), new Texture("Eye-2.png"), new Texture("Eye-3.png"), new Texture("Eye-4.png"), new Texture("Eye-4.png"), new Texture("Eye-5.png")}, 0.2f, "once");
         enemyTexture = new Texture("Enemy.png");
         bulletTexture = new Texture("Bullet.png");
         shrapnelTexture = new Texture("Shrapnel.png");
         heartTexture = new Texture("HeartFull.png");
         heartShadowTexture = new Texture("HeartShadow.png");
+
         deathParticles = new ParticleEffect();
         deathParticles.load(Gdx.files.internal("Skulls.p"), Gdx.files.internal(""));
         deathParticles.allowCompletion();
@@ -596,7 +600,7 @@ public class Main implements ApplicationListener {
         if(moving) {
             updateSprite(playerAnimation, playerSprite);
         } else {
-            playerSprite.setTexture(new Texture("Player.png"));
+            playerSprite.setTexture(playerTexture);
         }
         enemySprites.forEach((s) -> updateSprite(eyeAnimation, s));
     }
