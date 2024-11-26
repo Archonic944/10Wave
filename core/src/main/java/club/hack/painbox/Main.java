@@ -2,7 +2,6 @@ package club.hack.painbox;
 
 import club.hack.painbox.util.Animation;
 import com.badlogic.gdx.graphics.g2d.*;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import club.hack.painbox.data.BulletData;
 import club.hack.painbox.data.EnemyData;
@@ -51,65 +50,67 @@ public class Main implements ApplicationListener {
 
     Vector2 touchPos;
 
-    HashMap<Sprite, BulletData> bulletDataMap = new HashMap<>();
-    HashMap<Sprite, EnemyData> enemyDataMap = new HashMap<>();
+    HashMap<Sprite, BulletData> bulletDataMap;
+    HashMap<Sprite, EnemyData> enemyDataMap;
 
     // New HashMaps for enemy movement
-    HashMap<Sprite, Float> enemyPhaseMap = new HashMap<>();
-    HashMap<Sprite, Float> enemyOriginalXMap = new HashMap<>();
+    HashMap<Sprite, Float> enemyPhaseMap;
+    HashMap<Sprite, Float> enemyOriginalXMap;
 
-    float waveTimer;
     Rectangle playerRectangle;
     Rectangle enemyRectangle;
     Rectangle bulletRectangle;
 
     SpriteBatch spriteBatch;
     FitViewport viewport;
-    private SpriteBatch batch;
-    private TextureRegion[] walkFrames;
-    private final float speed = 100f;
 
     int maxPlayerHealth = 3;
-    int playerHealth = maxPlayerHealth;
+    int playerHealth;
 
     BitmapFont font;
     GlyphLayout layout;
 
     ShapeRenderer shapeRenderer;
 
-    boolean showHitboxes = false;
+    boolean showHitboxes;
+    boolean isFlippedVertically;
 
-    boolean isFlippedVertically = false;
+    int enemiesPerWave;
+    int currentWave;
 
-    int enemiesPerWave = 5;
-    int currentWave = 1;
-
-    private boolean isShaking = false;
-    private float shakeDuration = 0f;
-    private float shakeMagnitude = 0.5f;
-    private float shakeTimer = 0f;
+    private boolean isShaking;
+    private float shakeDuration;
+    private float shakeMagnitude;
+    private float shakeTimer;
 
     // Snapping Variables
-    private boolean isSnapping = false;
-    private Vector2 snapTarget = new Vector2();
-    private float snapSpeed = 10f;
+    private boolean isSnapping;
+    private Vector2 snapTarget;
+    private float snapSpeed;
 
     // Enemy movement parameters
     private final float enemyAmplitude = 1.45f;   // Amplitude of sine wave
     private final float enemyFrequency = 0.5f;   // Frequency in Hz
 
     // Timer and Game Over Variables
-    private float elapsedTime = 0f;              // Tracks elapsed time
-    private boolean isGameOver = false;          // Indicates if the game is over
-    private boolean isMaxWaveReached = false;    // Indicates if max wave is reached
+    private float elapsedTime;
+    private boolean isGameOver;
+    private boolean isMaxWaveReached;
 
     @Override
     public void create() {
-        // Initialize Textures, Sprites, Sounds, etc.
+        // Initialize resources
         backgroundTexture = new Texture("Background.png");
         playerAnimation = new Animation(new Texture[]{new Texture("Player-1.png"), new Texture("Player-2.png")}, 0.2f);
         playerTexture = new Texture("Player.png");
-        eyeAnimation = new Animation(new Texture[]{new Texture("Eye-1.png"), new Texture("Eye-2.png"), new Texture("Eye-3.png"), new Texture("Eye-4.png"), new Texture("Eye-4.png"), new Texture("Eye-5.png")}, 0.2f, "once");
+        eyeAnimation = new Animation(new Texture[]{
+            new Texture("Eye-1.png"),
+            new Texture("Eye-2.png"),
+            new Texture("Eye-3.png"),
+            new Texture("Eye-4.png"),
+            new Texture("Eye-4.png"),
+            new Texture("Eye-5.png")
+        }, 0.4f, "once");
         enemyTexture = new Texture("Enemy.png");
         bulletTexture = new Texture("Bullet.png");
         shrapnelTexture = new Texture("Shrapnel.png");
@@ -125,12 +126,6 @@ public class Main implements ApplicationListener {
         emptyTexture = new Texture("EmptyContainer.png");
         filledTexture = new Texture("FilledContainer.png");
 
-        playerSprite = new Sprite(playerAnimation.get());
-        playerSprite.setSize(1, 1);
-
-        enemySprites = new Array<>();
-        bulletSprites = new Array<>();
-
         hurtSound = Gdx.audio.newSound(Gdx.files.internal("Hurt.mp3"));
         music = Gdx.audio.newMusic(Gdx.files.internal("Music.mp3"));
         shootSound = Gdx.audio.newSound(Gdx.files.internal("Shoot.mp3"));
@@ -140,30 +135,56 @@ public class Main implements ApplicationListener {
         viewport = new FitViewport(16 / 1.2f, 10 / 1.2f);
         touchPos = new Vector2();
 
-        playerRectangle = new Rectangle();
-        enemyRectangle = new Rectangle();
-        bulletRectangle = new Rectangle();
-
         font = new BitmapFont();
+        font.setUseIntegerPositions(false);
+        font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
         layout = new GlyphLayout();
-
         shapeRenderer = new ShapeRenderer();
 
         music.setLooping(true);
         music.setVolume(0.5f);
         music.play();
 
-        playerSprite.setPosition(
-            (viewport.getWorldWidth() - playerSprite.getWidth()) / 2,
-            0
-        );
+        // Web-specific config
+        Gdx.input.setCatchKey(Input.Keys.UP, true);
+        Gdx.input.setCatchKey(Input.Keys.LEFT, true);
+        Gdx.input.setCatchKey(Input.Keys.RIGHT, true);
 
+        playerRectangle = new Rectangle();
+        enemyRectangle = new Rectangle();
+        bulletRectangle = new Rectangle();
+
+        newGame(); // Start a new game after initializing resources
+    }
+
+    void newGame() {
+        // Initialize or reset game variables
+        playerHealth = maxPlayerHealth;
         isShaking = false;
         shakeDuration = 0f;
         shakeMagnitude = 0.5f;
         shakeTimer = 0f;
+        isFlippedVertically = false;
+        isSnapping = false;
+        moving = false;
+        currentWave = 1;
+        enemiesPerWave = 5;
+        isGameOver = false;
+        isMaxWaveReached = false;
+        elapsedTime = 0f;
 
-        spawnWave();
+        enemySprites = new Array<>();
+        bulletSprites = new Array<>();
+        bulletDataMap = new HashMap<>();
+        enemyDataMap = new HashMap<>();
+        enemyPhaseMap = new HashMap<>();
+        enemyOriginalXMap = new HashMap<>();
+
+        playerSprite = new Sprite(playerAnimation.get());
+        playerSprite.setSize(1, 1);
+        playerSprite.setPosition((viewport.getWorldWidth() - playerSprite.getWidth()) / 2, 0);
+
+        spawnWave(); // Spawn the first wave of enemies
     }
 
     @Override
@@ -185,6 +206,7 @@ public class Main implements ApplicationListener {
     public void resume() {}
     @Override
     public void dispose() {
+        // Dispose resources
         backgroundTexture.dispose();
         enemyTexture.dispose();
         bulletTexture.dispose();
@@ -231,12 +253,16 @@ public class Main implements ApplicationListener {
     boolean moving = false;
 
     private void input() {
-        if (isGameOver) {
-            // Optionally, handle inputs like restarting the game here
-            return;
+        if (isGameOver || isMaxWaveReached) {
+            // Handle input for restarting the game
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                newGame();
+                System.out.println("Game restarted.");
+            }
+            return; // Skip other inputs when game is over
         }
 
-        if (!isSnapping && !isMaxWaveReached) {  // Restrict horizontal movement while snapping or max wave reached
+        if (!isSnapping) {  // Restrict horizontal movement while snapping or max wave reached
             float speed = 6.75f;
             float delta = Gdx.graphics.getDeltaTime();
 
@@ -250,14 +276,15 @@ public class Main implements ApplicationListener {
                 moving = false;
             }
 
-            // Handle Snapping
-            if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
-                snapToTop();
-            }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-                snapToBottom();
-            }
+            // Handle Snapping (REMOVED)
+            //if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
+                //snapToTop();
+            //}
+
+            //if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+                //snapToBottom();
+            //}
 
             // Handle Shooting
             if (Gdx.input.isKeyJustPressed(Input.Keys.UP) || Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
@@ -466,33 +493,35 @@ public class Main implements ApplicationListener {
             }
         }
 
-        // Handle Bullet-Player Collisions
-        for (int i = bulletSprites.size - 1; i >= 0; i--) {
-            Sprite bulletSprite = bulletSprites.get(i);
-            BulletData bulletData = bulletDataMap.get(bulletSprite);
-            bulletRectangle.set(bulletSprite.getX(), bulletSprite.getY(),
-                bulletSprite.getWidth(), bulletSprite.getHeight());
-            if (bulletData == null) {
-                continue;
-            }
+        if (!isMaxWaveReached) {
+            // Handle Bullet-Player Collisions
+            for (int i = bulletSprites.size - 1; i >= 0; i--) {
+                Sprite bulletSprite = bulletSprites.get(i);
+                BulletData bulletData = bulletDataMap.get(bulletSprite);
+                bulletRectangle.set(bulletSprite.getX(), bulletSprite.getY(),
+                    bulletSprite.getWidth(), bulletSprite.getHeight());
+                if (bulletData == null) {
+                    continue;
+                }
 
-            if (bulletRectangle.overlaps(playerRectangle)) {
-                playerHealth--;
-                Vector2 pos = heartLocation(playerHealth);
-                healthParticles.setPosition(pos.x, pos.y);
-                healthParticles.start();
-                healthParticles.setDuration(2);
-                hurtSound.play(0.3f);
-                bulletSprites.removeIndex(i);
-                bulletDataMap.remove(bulletSprite);
+                if (bulletRectangle.overlaps(playerRectangle)) {
+                    playerHealth--;
+                    Vector2 pos = heartLocation(playerHealth);
+                    healthParticles.setPosition(pos.x, pos.y);
+                    healthParticles.start();
+                    healthParticles.setDuration(2);
+                    hurtSound.play(0.3f);
+                    bulletSprites.removeIndex(i);
+                    bulletDataMap.remove(bulletSprite);
 
-                System.out.println("Player hit by bullet! Remaining Health: " + playerHealth);
+                    System.out.println("Player hit by bullet! Remaining Health: " + playerHealth);
 
-                startScreenShake(0.3f, 0.2f);
+                    startScreenShake(0.3f, 0.2f);
 
-                if (playerHealth <= 0) {
-                    isGameOver = true;
-                    System.out.println("Player has been defeated!");
+                    if (playerHealth <= 0) {
+                        isGameOver = true;
+                        System.out.println("Player has been defeated!");
+                    }
                 }
             }
         }
@@ -596,8 +625,8 @@ public class Main implements ApplicationListener {
         }
     }
 
-    void refreshAnimations(){
-        if(moving) {
+    void refreshAnimations() {
+        if (moving) {
             updateSprite(playerAnimation, playerSprite);
         } else {
             playerSprite.setTexture(playerTexture);
@@ -605,9 +634,9 @@ public class Main implements ApplicationListener {
         enemySprites.forEach((s) -> updateSprite(eyeAnimation, s));
     }
 
-    void updateSprite(Animation a, Sprite s){
+    void updateSprite(Animation a, Sprite s) {
         Texture t = a.get();
-        if(s.getTexture() != t) s.setTexture(t);
+        if (s.getTexture() != t) s.setTexture(t);
     }
 
     private void draw() {
@@ -637,37 +666,38 @@ public class Main implements ApplicationListener {
         // Draw Health Hearts
         for (int i = 0; i < maxPlayerHealth; i++) {
             Vector2 heartLocation = heartLocation(i);
-            spriteBatch.draw(heartShadowTexture, heartLocation.x + 0.05f, heartLocation.y - 0.05f, 0.5f, 0.5f);
+            spriteBatch.draw(heartShadowTexture, heartLocation.x + 0.05f, heartLocation.y - 0.05f, 0.8f, 0.8f);
             if (i < playerHealth) {
-                spriteBatch.draw(heartTexture, heartLocation.x, heartLocation.y, 0.5f, 0.5f);
+                spriteBatch.draw(heartTexture, heartLocation.x, heartLocation.y, 0.8f, 0.8f);
             }
         }
 
         // Draw Wave Containers (Top Center)
         for (int i = 0; i < 10; i++) {
-            if (i < currentWave && currentWave <= 10) {
+            if (i < currentWave - 1) {
                 spriteBatch.draw(filledTexture, 7f + i * 0.6f, viewport.getWorldHeight() - 0.6f, 0.5f, 0.5f);
             } else {
                 spriteBatch.draw(emptyTexture, 7f + i * 0.6f, viewport.getWorldHeight() - 0.6f, 0.5f, 0.5f);
             }
         }
 
-        // Draw Timer at Top Center
-        String timerText = String.format("Time: %02d:%02d", (int)(elapsedTime / 60), (int)(elapsedTime % 60));
+        // Draw Timer at Top Center (seconds and minutes both zero padded, ##:##)
+        String timerText = zeroPadded((int) elapsedTime / 60) + ":" + zeroPadded((int) elapsedTime % 60);
         layout.setText(font, timerText);
         font.setColor(isMaxWaveReached ? Color.GREEN : Color.WHITE);
-        // Optionally, adjust font scale for timer if needed
         font.getData().setScale(0.1f);
         font.draw(spriteBatch, timerText,
             (viewport.getWorldWidth() - layout.width) / 2,
             viewport.getWorldHeight() - 0.2f); // Slightly below the top edge
+        // Draw "Press R to Restart" below "Game Over"
+        if(isMaxWaveReached) drawRestartText();
 
         // Draw Particles
         deathParticles.draw(spriteBatch, Gdx.graphics.getDeltaTime());
         healthParticles.draw(spriteBatch, Gdx.graphics.getDeltaTime());
 
-        // Draw "Game Over" if applicable
-        if (isGameOver) {
+        // Draw "Game Over" and "Press R to Restart" if applicable
+        if (isGameOver && !isMaxWaveReached) {
             String gameOverText = "Game   Over   :(";
             layout.setText(font, gameOverText);
             font.setColor(Color.RED);
@@ -675,6 +705,10 @@ public class Main implements ApplicationListener {
             font.draw(spriteBatch, gameOverText,
                 (viewport.getWorldWidth() - layout.width) / 2,
                 (viewport.getWorldHeight() + layout.height) / 2);
+
+            // Draw "Press R to Restart" below "Game Over"
+            drawRestartText();
+
             font.getData().setScale(1f); // Reset font scale
         }
 
@@ -686,8 +720,18 @@ public class Main implements ApplicationListener {
         }
     }
 
-    private Vector2 heartLocation(int i){
-        return new Vector2(0.1f + i * 0.5f, viewport.getWorldHeight() - 0.5f);
+    private void drawRestartText() {
+        String restartText = "Press R to Restart";
+        layout.setText(font, restartText);
+        font.setColor(Color.YELLOW);
+        font.getData().setScale(0.08f); // Slightly smaller font scale
+        font.draw(spriteBatch, restartText,
+            (viewport.getWorldWidth() - layout.width) / 2,
+            (viewport.getWorldHeight() + layout.height) / 2 - layout.height * 1.5f);
+    }
+
+    private Vector2 heartLocation(int i) {
+        return new Vector2(0.1f + i * 0.8f, viewport.getWorldHeight() - 0.9f);
     }
 
     private void renderHitboxes() {
@@ -718,6 +762,11 @@ public class Main implements ApplicationListener {
         }
 
         shapeRenderer.end();
+    }
+
+    private String zeroPadded(int i) {
+        if (i < 10) return "0" + i;
+        return "" + i;
     }
 
     private void startScreenShake(float duration, float magnitude) {
