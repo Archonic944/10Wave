@@ -12,4 +12,4 @@ Clear 10 waves of enemies as fast as you can. Try to beat my record of 40 second
 
 # Controls
 
-Shoot with ←, →, and ↑. Move with A, D, and W.
+Shoot with ←, →, and ↑. Move with WASD.

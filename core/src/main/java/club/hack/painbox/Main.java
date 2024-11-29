@@ -85,8 +85,7 @@ public class Main implements ApplicationListener {
 
     // Snapping Variables
     private boolean isSnapping;
-    private Vector2 snapTarget;
-    private float snapSpeed;
+    private final float snapSpeed = 26.5f;
 
     // Enemy movement parameters
     private final float enemyAmplitude = 1.45f;   // Amplitude of sine wave
@@ -262,31 +261,33 @@ public class Main implements ApplicationListener {
             return; // Skip other inputs when game is over
         }
 
-        if (!isSnapping) {  // Restrict horizontal movement while snapping or max wave reached
-            float speed = 6.75f;
-            float delta = Gdx.graphics.getDeltaTime();
+        float speed = 6.75f;
+        float delta = Gdx.graphics.getDeltaTime();
 
-            if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-                playerSprite.translateX(speed * delta);
-                moving = true;
-            } else if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-                playerSprite.translateX(-speed * delta);
-                moving = true;
-            } else {
-                moving = false;
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            playerSprite.translateX(speed * delta);
+            moving = true;
+        } else if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            playerSprite.translateX(-speed * delta);
+            moving = true;
+        } else {
+            moving = false;
+        }
+
+
+        // Handle Snapping
+        if(!isSnapping) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
+                snapToTop();
+            }
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+                snapToBottom();
             }
 
 
-            // Handle Snapping (REMOVED)
-            //if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
-                //snapToTop();
-            //}
-
-            //if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-                //snapToBottom();
-            //}
-
             // Handle Shooting
+            // Player cannot shoot while snapping
             if (Gdx.input.isKeyJustPressed(Input.Keys.UP) || Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
                 if (!isFlippedVertically) {
                     createBullet(0, 1, false);
@@ -318,24 +319,15 @@ public class Main implements ApplicationListener {
             }
         }
 
-        // Handle Touch Input (Optional)
-        if (Gdx.input.isTouched()) {
-            touchPos.set(Gdx.input.getX(), Gdx.input.getY());
-            viewport.unproject(touchPos);
-            playerSprite.setCenterX(touchPos.x);
-        }
-
-        // Toggle hitbox rendering with the H key
-        if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
-            showHitboxes = !showHitboxes;
-            System.out.println("Hitbox Rendering: " + (showHitboxes ? "ON" : "OFF"));
-        }
+//        // Toggle hitbox rendering with the H key
+//        if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
+//            showHitboxes = !showHitboxes;
+//            System.out.println("Hitbox Rendering: " + (showHitboxes ? "ON" : "OFF"));
+//        }
     }
 
     private void snapToTop() {
-        snapTarget.set(playerSprite.getX(), viewport.getWorldHeight() - playerSprite.getHeight());
         isSnapping = true;
-
         if (!isFlippedVertically) {
             playerSprite.setFlip(false, true);
             isFlippedVertically = true;
@@ -344,13 +336,32 @@ public class Main implements ApplicationListener {
     }
 
     private void snapToBottom() {
-        snapTarget.set(playerSprite.getX(), 0);
         isSnapping = true;
-
         if (isFlippedVertically) {
             playerSprite.setFlip(false, false);
             isFlippedVertically = false;
             System.out.println("Player snapping to bottom.");
+        }
+    }
+
+    /**
+     * Updates snap. Call every frame no matter what.
+     */
+    private void updateSnap(float delta){
+        if(isSnapping) {
+            if (isFlippedVertically) {
+                float newY = playerSprite.getY() + snapSpeed * delta;
+                if (newY > viewport.getWorldHeight()) {
+                    playerSprite.setY(viewport.getWorldHeight() - playerSprite.getHeight());
+                    isSnapping = false;
+                }else playerSprite.setY(newY);
+            }else{
+                float newY = playerSprite.getY() - snapSpeed * delta;
+                if (newY < 0) {
+                    playerSprite.setY(0);
+                    isSnapping = false;
+                }else playerSprite.setY(newY);
+            }
         }
     }
 
@@ -363,20 +374,7 @@ public class Main implements ApplicationListener {
         float worldHeight = viewport.getWorldHeight();
 
         // Handle Snapping Movement
-        if (isSnapping) {
-            Vector2 currentPosition = new Vector2(playerSprite.getX(), playerSprite.getY());
-            Vector2 newPosition = new Vector2(
-                MathUtils.lerp(currentPosition.x, snapTarget.x, snapSpeed * delta),
-                MathUtils.lerp(currentPosition.y, snapTarget.y, snapSpeed * delta)
-            );
-            playerSprite.setPosition(newPosition.x, newPosition.y);
-
-            if (newPosition.dst(snapTarget) < 0.1f) {
-                playerSprite.setPosition(snapTarget.x, snapTarget.y);
-                isSnapping = false;
-                System.out.println("Snapping completed.");
-            }
-        }
+        updateSnap(delta);
 
         // Clamp Player Position Horizontally
         float playerWidth = playerSprite.getWidth();
