@@ -182,7 +182,7 @@ public class Main implements ApplicationListener {
         playerSprite = new Sprite(playerAnimation.get());
         playerSprite.setSize(1, 1);
         playerSprite.setPosition((viewport.getWorldWidth() - playerSprite.getWidth()) / 2, 0);
-
+        resetCamera();
         spawnWave(); // Spawn the first wave of enemies
     }
 
@@ -571,11 +571,15 @@ public class Main implements ApplicationListener {
                     0);
                 viewport.getCamera().update();
             } else {
-                viewport.getCamera().position.set(viewport.getWorldWidth() / 2, viewport.getWorldHeight() / 2, 0);
-                viewport.getCamera().update();
+                resetCamera();
                 isShaking = false;
             }
         }
+    }
+
+    private void resetCamera(){
+        viewport.getCamera().position.set(viewport.getWorldWidth() / 2, viewport.getWorldHeight() / 2, 0);
+        viewport.getCamera().update();
     }
 
     /**
