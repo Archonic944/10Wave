@@ -7,7 +7,10 @@ gradle-app.setting
 /core/build/
 /lwjgl2/build/
 /lwjgl3/build/
-/html/build/
+/html/build/classes/
+/html/build/generated/
+/html/build/gwt/
+/html/build/tmp/
 /teavm/build/
 /ios/build/
 /ios-moe/build/
