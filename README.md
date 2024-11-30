@@ -4,7 +4,9 @@ A [libGDX](https://libgdx.com/) based game created in 24 hours for [Hack Club Co
 
 # Running the game
 
-Download the latest release from the Releases tab. **Please ensure you have Java installed before executing the jar.**.
+[10Wave is playable on the web! Click here to visit it!](https://10wave.vercel.app)
+
+Or, download the latest release from the Releases tab. **Please ensure you have Java installed before executing the jar.**.
 
 # Objective
 
